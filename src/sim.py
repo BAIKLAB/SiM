@@ -74,16 +74,6 @@ def parse_arguments_for_merge():
         help="Number of calibration set samples used to estimate each task subspace.",
     )
     parser.add_argument(
-        "--normalize",
-        action="store_true",
-        help="Whether to normalize final image features before routing/classification.",
-    )
-    parser.add_argument(
-        "--tallmask-setting",
-        action="store_true",
-        help="Use fine-tuned checkpoints prepared for the TALL-mask setting.",
-    )
-    parser.add_argument(
         "--seed",
         type=int,
         default=0,
@@ -135,8 +125,8 @@ def get_task_names(num_tasks):
 def load_finetuned_state_dicts(args, datasets):
     load_model_paths = []
     for source_dataset_name in datasets:
-        ds_name = f"{source_dataset_name}Val" if args.tallmask_setting else source_dataset_name
-        ckpt_name = "nonlinear_finetuned.pt" if args.tallmask_setting else "finetuned.pt"
+        ds_name = f"{source_dataset_name}Val" 
+        ckpt_name = "nonlinear_finetuned.pt" 
         load_model_path = os.path.join(args.model_ckpt_dir, args.model, ds_name, ckpt_name)
         print(f"loading a checkpoint from {load_model_path}")
         load_model_paths.append(load_model_path)
@@ -167,11 +157,8 @@ def build_task_vectors(pre_state_dict, ft_state_dicts):
 def build_classification_heads(args, datasets, device):
     heads = {}
     for dataset_name in datasets:
-        args.dataset_name = f"{dataset_name}Val" if args.tallmask_setting else dataset_name
-        if args.tallmask_setting:
-            heads[dataset_name] = get_classification_head(args, dataset_name)
-        else:
-            heads[dataset_name] = get_original_classification_head(args)
+        args.dataset_name = f"{dataset_name}Val" 
+        heads[dataset_name] = get_classification_head(args, dataset_name)
         heads[dataset_name] = heads[dataset_name].to(device)
         heads[dataset_name].eval()
     return heads
@@ -246,8 +233,6 @@ def merge_over_two_ckpts(args):
     save_params_dir = os.path.join("params", exp_name, args.model, f"t{args.num_tasks}")
     os.makedirs(save_params_dir, exist_ok=True)
     fn_bank = "memory_bank"
-    if args.tallmask_setting:
-        fn_bank += "_tallmask"
     save_params_path = os.path.join(save_params_dir, f"{fn_bank}.pt")
     memory_bank = load_or_build_memory_bank(
         args, datasets, base_model, merged_state_dict, device, save_params_path
@@ -257,10 +242,8 @@ def merge_over_two_ckpts(args):
     for target_dataset_name in datasets:
         print("Evaluating on", target_dataset_name)
 
-        result_variant = "tallmask" if args.tallmask_setting else "standard"
         save_result_dir = os.path.join(
             "results",
-            result_variant,
             args.model,
             f"t{args.num_tasks}_{target_dataset_name}_{args.merging_method}",
             exp_name,
@@ -292,8 +275,7 @@ def merge_over_two_ckpts(args):
 
                     base_model.load_state_dict(merged_state_dict)
                     last_feature = base_model(x)
-                    if args.normalize:
-                        last_feature = last_feature / last_feature.norm(dim=-1, keepdim=True)
+                    last_feature = last_feature / last_feature.norm(dim=-1, keepdim=True)
 
                     ts_logits = torch.zeros(x.size(0), len(datasets), device=device)
                     for task_id, dataset_name in enumerate(datasets):
@@ -345,8 +327,7 @@ def merge_over_two_ckpts(args):
                             raise NotImplementedError
 
                         last_feature = base_model(grouped_x)
-                        if args.normalize:
-                            last_feature = last_feature / last_feature.norm(dim=-1, keepdim=True)
+                        last_feature = last_feature / last_feature.norm(dim=-1, keepdim=True)
                         logits = heads[target_dataset_name](last_feature)
                         pred[ts_pred.squeeze(1) == task_id] = logits.argmax(dim=1)
 

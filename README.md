@@ -19,13 +19,13 @@ python -m src.sim \
   --data-location /path/to/datasets \
   --model-ckpt-dir /path/to/checkpoints \
   --num-tasks 8 \
-  --merging-method <base_merging_method> \
+  --merging-method emr \
   --n-samples 32 \
   --k 0.1
 ```
-Replace `<base_merging_method>` with one of `emr`, `tm_ta`, `tm_ties`, or `tsv`.
+Supported base merging methods are `emr`, `tm_ta`, `tm_ties`, or `tsv`.
 
-## Acknowledgements
+## Acknowledgement
 
 This implementation is based on or adapted from the following repositories. We thank the authors for releasing their code.
 

@@ -69,8 +69,7 @@ def get_manifolds(
                     x = x[:n_samples - n, ...]
 
                 feature = base_encoder(x)
-                if args.normalize:
-                    feature = feature / feature.norm(dim=-1, keepdim=True)
+                feature = feature / feature.norm(dim=-1, keepdim=True)
                 features.append(feature)
 
                 n += x.size(0)
